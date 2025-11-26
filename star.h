@@ -117,8 +117,6 @@ static inline void __star_increment_failed() {
     
 /* ASSERTS */
 static inline bool __assert_eq(double a, double b, bool negate) {
-    _star_asserts_total++;
-
     bool equal = __star_nearly_equal(a, b);
     bool ok = negate ? !equal : equal;
 
@@ -174,54 +172,51 @@ static inline int __star_find_linear(
     return -1;
 }
 
-
 /* MACROS */
 // Equality & Inequality
-#define ASS_EQ(a, b)                                                      \
+#define __STAR_EQ_IMPL(label, a, b, FAIL_CALL)                            \
     do {                                                                  \
+        _star_asserts_total++;                                            \
         if (!__assert_eq((double)(a), (double)(b), false)) {              \
-            _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",               \
-                       #a, #b, (double)(a), (double)(b));                 \
+            FAIL_CALL;                                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_EQ(%s, %s) passed: %lf == %lf",               \
+            _STAR_PASS(#label "(%s, %s) passed: %lf == %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
 
+#define ASS_EQ(a, b)                                                      \
+    __STAR_EQ_IMPL(ASS_EQ, a, b,                                          \
+        _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",                   \
+                   #a, #b, (double)(a), (double)(b)))
+
 #define ASS_EQM(a, b, m)                                                  \
+    __STAR_EQ_IMPL(ASS_EQM, a, b,                                         \
+        _STAR_FAIL("ASS_EQM(%s, %s) %s",                                  \
+                   #a, #b, _STAR_CUSTOM(m)))
+
+#define __STAR_NEQ_IMPL(label, a, b, FAIL_CALL)                           \
     do {                                                                  \
-        if (!__assert_eq((double)(a), (double)(b), false)) {              \
-            _STAR_FAIL("ASS_EQM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));    \
+        _star_asserts_total++;                                            \
+        if (!__assert_eq((double)(a), (double)(b), true)) {               \
+            FAIL_CALL;                                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_EQM(%s, %s) passed: %lf == %lf",              \
+            _STAR_PASS(#label "(%s, %s) passed: %lf == %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
 
 #define ASS_NEQ(a, b)                                                     \
-    do {                                                                  \
-        if (!__assert_eq((double)(a), (double)(b), true)) {               \
-            _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf",              \
-                       #a, #b, (double)(a), (double)(b));                 \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_NEQ(%s, %s) passed: %lf != %lf",              \
-                       #a, #b, (double)(a), (double)(b));                 \
-        }                                                                 \
-    } while (0)
+    __STAR_NEQ_IMPL(ASS_NEQ, a, b,                                        \
+        _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf != %lf",                  \
+                   #a, #b, (double)(a), (double)(b)))
 
 #define ASS_NEQM(a, b, m)                                                 \
-    do {                                                                  \
-        if (!__assert_eq((double)(a), (double)(b), true)) {               \
-            _STAR_FAIL("ASS_NEQM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));   \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_NEQM(%s, %s) passed: %lf != %lf",             \
-                       #a, #b, (double)(a), (double)(b));                 \
-        }                                                                 \
-    } while (0)
+    __STAR_NEQ_IMPL(ASS_NEQM, a, b,                                       \
+        _STAR_FAIL("ASS_NEQM(%s, %s) %s",                                 \
+                   #a, #b, _STAR_CUSTOM(m)))
 
 #define ASS_STREQ(a, b)                                                   \
     do {                                                                  \
@@ -272,63 +267,56 @@ static inline int __star_find_linear(
         }                                                                 \
     } while (0)
 
-#define ASS_KINDAEQ(a, b, dptr)                                           \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        double n = __star_kinda_degree(dptr);                             \
-        if (!__assert_kindaeq((a), (b), n, false)) {                      \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
-        }                                                                 \
-    } while (0)
-
-#define ASS_KINDAEQM(a, b, dptr, m)                                       \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        double n = __star_kinda_degree(dptr);                             \
-        if (!__assert_kindaeq((a), (b), n, false)) {                      \
-            _STAR_FAIL("ASS_KINDAEQM(%s, %s) %s",                         \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDAEQM(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
-        }                                                                 \
+#define __STAR_KINDAEQ_IMPL(label, a, b, dptr, FAIL_CALL)                      \
+    do {                                                                       \
+        _star_asserts_total++;                                                 \
+        double n = __star_kinda_degree(dptr);                                  \
+        if (!__assert_kindaeq((a), (b), n, false)) {                           \
+            FAIL_CALL;                                                         \
+            if (_star_fatal) return;                                           \
+        } else if (_star_verbose) {                                            \
+            _STAR_PASS(#label "(%s, %s) passed: %lf ≈ %lf (degree %lf)",       \
+                       #a, #b, (double)(a), (double)(b), n);                   \
+        }                                                                      \
     } while (0)
 
 
-#define ASS_KINDANEQ(a, b, dptr)                                          \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        double n = __star_kinda_degree(dptr);                             \
-        if (!__assert_kindaeq((a), (b), n, true)) {                       \
-            _STAR_FAIL("ASS_KINDANEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDANEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
-        }                                                                 \
+#define ASS_KINDAEQ(a, b, dptr)                                                \
+    __STAR_KINDAEQ_IMPL(ASS_KINDAEQ, a, b, dptr,                               \
+        _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)",      \
+                  #a, #b, (double)(a), (double)(b), n) /* macro trickery.. */  \
+    )
+
+#define ASS_KINDAEQM(a, b, dptr, m)                                            \
+    __STAR_KINDAEQ_IMPL(ASS_KINDAEQM, a, b, dptr,                              \
+        _STAR_FAIL("ASS_KINDAEQ(%s, %s) %s",                                   \
+                  #a, #b, _STAR_CUSTOM(m))                                     \
+    )
+
+#define __STAR_KINDANEQ_IMPL(a, b, dptr, FAIL_CALL)                            \
+    do {                                                                       \
+        _star_asserts_total++;                                                 \
+        double n = __star_kinda_degree(dptr);                                  \
+        if (!__assert_kindaeq((a), (b), n, true)) {                            \
+            FAIL_CALL;                                                         \
+            if (_star_fatal) return;                                           \
+        } else if (_star_verbose) {                                            \
+            _STAR_PASS("ASS_KINDANEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)",  \
+                       #a, #b, (double)(a), (double)(b), n);                   \
+        }                                                                      \
     } while (0)
 
+#define ASS_KINDANEQ(a, b, dptr)                                               \
+    __STAR_KINDANEQ_IMPL(a, b, dptr,                                           \
+        _STAR_FAIL("ASS_KINDANEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)",      \
+                  #a, #b, (double)(a), (double)(b), n)                         \
+    )
 
-#define ASS_KINDANEQM(a, b, dptr, m)                                      \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        double n = __star_kinda_degree(dptr);                             \
-        if (!__assert_kindaeq((a), (b), n, true)) {                       \
-        _STAR_FAIL("ASS_KINDANEQM(%s, %s) %s",                            \
-                        #a, #b, _STAR_CUSTOM(m));                         \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDANEQM(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
-                        #a, #b, (double)(a), (double)(b), n);             \
-        }                                                                 \
-    } while (0)
+#define ASS_KINDANEQM(a, b, dptr, m)                                           \
+    __STAR_KINDANEQ_IMPL(a, b, dptr,                                           \
+        _STAR_FAIL("ASS_KINDNAEQ(%s, %s) %s",                                  \
+                  #a, #b, _STAR_CUSTOM(m))                                     \
+    )
 
 #define ASS_TRUE(expr)                                                    \
     do {                                                                  \
@@ -862,6 +850,8 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
+        0.6.3  (2025-11-27)  Basic refactoring assertion macros for improved readability and maintainability.
+                             Done N/EQ/M and KINDA/N/EQ/M.
         0.6.2  (2025-11-27)  Fixed KINDANEQ/M logic to properly fail and append to global asserts + refactored
                              error message macros improved readability and consistency.
         0.6.1  (2025-11-25)  Added binary search collection asserts and custom messages.
