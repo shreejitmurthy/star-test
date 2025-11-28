@@ -244,153 +244,109 @@ static inline int __star_find_linear(
         _STAR_FAIL("ASS_STRNEQM(%s, %s) %s",                              \
                 #a, #b, _STAR_CUSTOM(m)));                                \
 
-// TODO: Refactor to use more space-efficient implement method
-#define __STAR_KINDAEQ_IMPL(label, a, b, dptr, FAIL_CALL)                      \
+#define __STAR_KINDAEQ_IMPL(label, a, b, dptr, negate, FAIL_CALL)              \
     do {                                                                       \
         _star_asserts_total++;                                                 \
         double n = __star_kinda_degree(dptr);                                  \
-        if (!__assert_kindaeq((a), (b), n, false)) {                           \
+        if (!__assert_kindaeq((a), (b), n, (negate))) {                        \
             FAIL_CALL;                                                         \
             if (_star_fatal) return;                                           \
         } else if (_star_verbose) {                                            \
-            _STAR_PASS(#label "(%s, %s) passed: %lf ≈ %lf (degree %lf)",       \
+            if (!(negate))                                                     \
+                _STAR_PASS(#label "(%s, %s) passed: %lf ≈ %lf (degree %lf)",   \
+                       #a, #b, (double)(a), (double)(b), n);                   \
+            else                                                               \
+                _STAR_PASS(#label "(%s, %s) passed: %lf !≈ %lf (degree %lf)",  \
                        #a, #b, (double)(a), (double)(b), n);                   \
         }                                                                      \
     } while (0)
 
-
 #define ASS_KINDAEQ(a, b, dptr)                                                \
-    __STAR_KINDAEQ_IMPL(ASS_KINDAEQ, a, b, dptr,                               \
+    __STAR_KINDAEQ_IMPL(ASS_KINDAEQ, a, b, dptr, false,                        \
         _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)",      \
                   #a, #b, (double)(a), (double)(b), n) /* macro trickery.. */  \
     )
 
 #define ASS_KINDAEQM(a, b, dptr, m)                                            \
-    __STAR_KINDAEQ_IMPL(ASS_KINDAEQM, a, b, dptr,                              \
-        _STAR_FAIL("ASS_KINDAEQ(%s, %s) %s",                                   \
+    __STAR_KINDAEQ_IMPL(ASS_KINDAEQM, a, b, dptr, false,                       \
+        _STAR_FAIL("ASS_KINDAEQM(%s, %s) %s",                                  \
                   #a, #b, _STAR_CUSTOM(m))                                     \
     )
 
-#define __STAR_KINDANEQ_IMPL(a, b, dptr, FAIL_CALL)                            \
-    do {                                                                       \
-        _star_asserts_total++;                                                 \
-        double n = __star_kinda_degree(dptr);                                  \
-        if (!__assert_kindaeq((a), (b), n, true)) {                            \
-            FAIL_CALL;                                                         \
-            if (_star_fatal) return;                                           \
-        } else if (_star_verbose) {                                            \
-            _STAR_PASS("ASS_KINDANEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)",  \
-                       #a, #b, (double)(a), (double)(b), n);                   \
-        }                                                                      \
-    } while (0)
-
 #define ASS_KINDANEQ(a, b, dptr)                                               \
-    __STAR_KINDANEQ_IMPL(a, b, dptr,                                           \
+    __STAR_KINDAEQ_IMPL(ASS_KINDANEQ, a, b, dptr, true,                        \
         _STAR_FAIL("ASS_KINDANEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)",      \
                   #a, #b, (double)(a), (double)(b), n)                         \
     )
 
 #define ASS_KINDANEQM(a, b, dptr, m)                                           \
-    __STAR_KINDANEQ_IMPL(a, b, dptr,                                           \
-        _STAR_FAIL("ASS_KINDNAEQ(%s, %s) %s",                                  \
+    __STAR_KINDANEQ_IMPL(ASS_KINDANEQM, a, b, dptr, true,                      \
+        _STAR_FAIL("ASS_KINDNAEQM(%s, %s) %s",                                 \
                   #a, #b, _STAR_CUSTOM(m))                                     \
     )
 
-#define ASS_TRUE(expr)                                                    \
+#define __STAR_BOOL_IMPL(label, expr, expect_true, FAIL_CALL)             \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        if (!(expr)) {                                                    \
-            _STAR_FAIL("ASS_TRUE(%s) failed", #expr);                     \
+        if (!!(expr) != !!(expect_true)) {                                \
+            FAIL_CALL;                                                    \
             __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
+            _STAR_PASS(#label "(%s) passed", #expr);                      \
         }                                                                 \
     } while (0)
+
+#define ASS_TRUE(expr)                                                    \
+    __STAR_BOOL_IMPL(ASS_TRUE, expr, true,                                \
+        _STAR_FAIL("ASS_TRUE(%s) failed", #expr))
 
 #define ASS_TRUEM(expr, m)                                                \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (!(expr)) {                                                    \
-            _STAR_FAIL("ASS_TRUE(%s) %s", #expr, _STAR_CUSTOM(m));        \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
-        }                                                                 \
-    } while (0)
+    __STAR_BOOL_IMPL(ASS_TRUE, expr, true,                                \
+        _STAR_FAIL("ASS_TRUEM(%s) %s", #expr, _STAR_CUSTOM(m)))
 
 #define ASS_FALSE(expr)                                                   \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((expr)) {                                                     \
-            _STAR_FAIL("ASS_FALSE(%s) failed", #expr);                    \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
-        }                                                                 \
-    } while (0)
+    __STAR_BOOL_IMPL(ASS_FALSE, expr, false,                              \
+        _STAR_FAIL("ASS_FALSE(%s) failed", #expr))
 
 #define ASS_FALSEM(expr, m)                                               \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((expr)) {                                                     \
-            _STAR_FAIL("ASS_FALSE(%s) %s", #expr, _STAR_CUSTOM(m));       \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
-        }                                                                 \
+    __STAR_BOOL_IMPL(ASS_FALSE, expr, false,                              \
+        _STAR_FAIL("ASS_FALSM(%s) %s", #expr, _STAR_CUSTOM(m)))
+
+
+#define __STAR_MEMCMP_IMPL(label, a, b, negate, FAIL_CALL)               \
+    do {                                                                 \
+        _star_asserts_total++;                                           \
+        int __star_memcmp_res = memcmp(&(a), &(b), sizeof(a));           \
+        bool __star_equal = (__star_memcmp_res == 0);                    \
+        if (__star_equal == (negate)) {                                  \
+            FAIL_CALL;                                                   \
+            __star_increment_failed();                                   \
+            if (_star_fatal) return;                                     \
+        } else if (_star_verbose) {                                      \
+            if (!(negate))                                               \
+                _STAR_PASS(#label "(%s, %s) passed", #a, #b);            \
+            else                                                         \
+                _STAR_PASS(#label "(%s, %s) passed (not equal)", #a, #b);\
+        }                                                                \
     } while (0)
 
-#define ASS_IS(a, b)                                                      \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (memcmp(&(a), &(b), sizeof((a)))) {                            \
-            _STAR_FAIL("ASS_IS(%s, %s) failed", #a, #b);                  \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
-        }                                                                 \
-    } while (0)
+#define ASS_IS(a, b)                                                     \
+    __STAR_MEMCMP_IMPL(ASS_IS, a, b, false,                              \
+        _STAR_FAIL("ASS_IS(%s, %s) failed", #a, #b))
 
-#define ASS_ISM(a, b, m)                                                  \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (memcmp(&(a), &(b), sizeof((a)))) {                            \
-            _STAR_FAIL("ASS_IS(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));     \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
-        }                                                                 \
-    } while (0)
+#define ASS_ISM(a, b, m)                                                 \
+    __STAR_MEMCMP_IMPL(ASS_IS, a, b, false,                              \
+        _STAR_FAIL("ASS_ISM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m)))
 
-#define ASS_ISNT(a, b)                                                    \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
-            _STAR_FAIL("ASS_ISNT(%s, %s) failed", #a, #b);                \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
-        }                                                                 \
-    } while (0)
+#define ASS_ISNT(a, b)                                                   \
+    __STAR_MEMCMP_IMPL(ASS_ISNT, a, b, true,                             \
+        _STAR_FAIL("ASS_ISNT(%s, %s) failed", #a, #b))
 
-#define ASS_ISNTM(a, b, m)                                                \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
-            _STAR_FAIL("ASS_ISNT(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));   \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
-        }                                                                 \
-    } while (0)
+#define ASS_ISNTM(a, b, m)                                               \
+    __STAR_MEMCMP_IMPL(ASS_ISNT, a, b, true,                             \
+        _STAR_FAIL("ASS_ISNTM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m)))
+
 
 // Null / None / Undefined
 #define ASS_ISNULL(expr)                                                  \
@@ -442,117 +398,92 @@ static inline int __star_find_linear(
     } while (0)
 
 // Comparisons
-#define ASS_GREATER(a, b)                                                 \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) <= (b)) {                                                 \
-            _STAR_FAIL("ASS_GREATER(%s, %s) failed: %lf <= %lf",          \
-                #a, #b, (double)(a), (double)(b));                        \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_GREATER(%s, %s) passed: %lf > %lf",           \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
+/*
+ * op_code:
+ *   0 = a >  b
+ *   1 = a >= b
+ *   2 = a <  b
+ *   3 = a <= b
+ *
+ * PASS messages and FAIL messages are formatted by each public macro.
+ */
+
+#define __STAR_CMP_IMPL(a, b, op_code, FAIL_CALL, PASS_FMT)              \
+    do {                                                                 \
+        _star_asserts_total++;                                           \
+        double __va = (double)(a);                                       \
+        double __vb = (double)(b);                                       \
+        bool __ok = false;                                               \
+        switch (op_code) {                                               \
+            case 0: __ok = (__va >  __vb); break;                        \
+            case 1: __ok = (__va >= __vb); break;                        \
+            case 2: __ok = (__va <  __vb); break;                        \
+            case 3: __ok = (__va <= __vb); break;                        \
+        }                                                                \
+        if (!__ok) {                                                     \
+            FAIL_CALL;                                                   \
+            __star_increment_failed();                                   \
+            if (_star_fatal) return;                                     \
+        } else if (_star_verbose) {                                      \
+            _STAR_PASS PASS_FMT;                                         \
+        }                                                                \
     } while (0)
 
-#define ASS_GREATERM(a, b, m)                                             \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) <= (b)) {                                                 \
-            _STAR_FAIL("ASS_GREATERM(%s, %s) %s",                         \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_GREATERM(%s, %s) passed: %lf > %lf",          \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_GREATER(a, b)                                                \
+    __STAR_CMP_IMPL(a, b, 0,                                             \
+        _STAR_FAIL("ASS_GREATER(%s, %s) failed: %lf <= %lf",             \
+                   #a, #b, (double)(a), (double)(b)),                    \
+        ("ASS_GREATER(%s, %s) passed: %lf > %lf",                        \
+            #a, #b, __va, __vb))
 
-#define ASS_GREATEREQ(a, b)                                               \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) < (b)) {                                                  \
-            _STAR_FAIL("ASS_GREATEREQ(%s, %s) failed: %lf < %lf",         \
-                #a, #b, (double)(a), (double)(b));                        \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_GREATEREQ(%s, %s) passed: %lf >= %lf",        \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_GREATERM(a, b, m)                                            \
+    __STAR_CMP_IMPL(a, b, 0,                                             \
+        _STAR_FAIL("ASS_GREATERM(%s, %s) %s",                            \
+                   #a, #b, _STAR_CUSTOM(m)),                             \
+        ("ASS_GREATERM(%s, %s) passed: %lf > %lf",                       \
+            #a, #b, __va, __vb))
 
-#define ASS_GREATERQM(a, b, m)                                            \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) < (b)) {                                                  \
-            _STAR_FAIL("ASS_GREATEREQM(%s, %s) %s",                       \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_GREATEREQM(%s, %s) passed: %lf >= %lf",        \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_GREATEREQ(a, b)                                              \
+    __STAR_CMP_IMPL(a, b, 1,                                             \
+        _STAR_FAIL("ASS_GREATEREQ(%s, %s) failed: %lf < %lf",            \
+                   #a, #b, (double)(a), (double)(b)),                    \
+        ("ASS_GREATEREQ(%s, %s) passed: %lf >= %lf",                     \
+            #a, #b, __va, __vb))
 
-#define ASS_LESSER(a, b)                                                  \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) >= (b)) {                                                 \
-            _STAR_FAIL("ASS_LESSER(%s, %s) failed: %lf >= %lf",           \
-                #a, #b, (double)(a), (double)(b));                        \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_LESSER(%s, %s) passed: %lf < %lf",            \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_GREATEREQM(a, b, m)                                          \
+    __STAR_CMP_IMPL(a, b, 1,                                             \
+        _STAR_FAIL("ASS_GREATEREQM(%s, %s) %s",                          \
+                   #a, #b, _STAR_CUSTOM(m)),                             \
+        ("ASS_GREATEREQM(%s, %s) passed: %lf >= %lf",                    \
+            #a, #b, __va, __vb))
 
-#define ASS_LESSERM(a, b, m)                                              \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) >= (b)) {                                                 \
-            _STAR_FAIL("ASS_LESSERM(%s, %s) %s",                          \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_LESSERM(%s, %s) passed: %lf < %lf %s",        \
-                #a, #b, (double)(a), (double)(b), _STAR_CUSTOM(m));       \
-        }                                                                 \
-    } while (0)
+#define ASS_LESSER(a, b)                                                 \
+    __STAR_CMP_IMPL(a, b, 2,                                             \
+        _STAR_FAIL("ASS_LESSER(%s, %s) failed: %lf >= %lf",              \
+                   #a, #b, (double)(a), (double)(b)),                    \
+        ("ASS_LESSER(%s, %s) passed: %lf < %lf",                         \
+            #a, #b, __va, __vb))
 
-#define ASS_LESSEREQ(a, b)                                                \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) > (b)) {                                                  \
-            _STAR_FAIL("ASS_LESSEREQ(%s, %s) failed: %lf > %lf",          \
-                #a, #b, (double)(a), (double)(b));                        \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_LESSEREQ(%s, %s) passed: %lf <= %lf",         \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_LESSERM(a, b, m)                                             \
+    __STAR_CMP_IMPL(a, b, 2,                                             \
+        _STAR_FAIL("ASS_LESSERM(%s, %s) %s",                             \
+                   #a, #b, _STAR_CUSTOM(m)),                             \
+        ("ASS_LESSERM(%s, %s) passed: %lf < %lf %s",                     \
+            #a, #b, __va, __vb, _STAR_CUSTOM(m)))
 
-#define ASS_LESSERQM(a, b, m)                                             \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if ((a) > (b)) {                                                  \
-            _STAR_FAIL("ASS_LESSEREQM(%s, %s) %s",                        \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            __star_increment_failed();                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_LESSEREQM(%s, %s) passed: %lf < %lf",         \
-                #a, #b, (double)(a), (double)(b));                        \
-        }                                                                 \
-    } while (0)
+#define ASS_LESSEREQ(a, b)                                               \
+    __STAR_CMP_IMPL(a, b, 3,                                             \
+        _STAR_FAIL("ASS_LESSEREQ(%s, %s) failed: %lf > %lf",             \
+                   #a, #b, (double)(a), (double)(b)),                    \
+        ("ASS_LESSEREQ(%s, %s) passed: %lf <= %lf",                      \
+            #a, #b, __va, __vb))
+
+#define ASS_LESSEREQM(a, b, m)                                           \
+    __STAR_CMP_IMPL(a, b, 3,                                             \
+        _STAR_FAIL("ASS_LESSEREQM(%s, %s) %s",                           \
+                   #a, #b, _STAR_CUSTOM(m)),                             \
+        ("ASS_LESSEREQM(%s, %s) passed: %lf <= %lf",                     \
+            #a, #b, __va, __vb))
 
 // Collections / Sequences
 #define __STAR_VALUE_EQUALS(a, b) _Generic((a),                                  \
@@ -828,6 +759,7 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
+        0.6.5  (2025-11-29)  Refactoring kinda, is, and comparison macros. 
         0.6.4  (2025-11-29)  Refactoring string assertion macros.
         0.6.3  (2025-11-27)  Basic refactoring assertion macros for improved readability and maintainability.
                              Done N/EQ/M and KINDA/N/EQ/M.
