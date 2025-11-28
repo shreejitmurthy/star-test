@@ -128,8 +128,6 @@ static inline bool __assert_eq(double a, double b, bool negate) {
 }
 
 static inline bool __assert_streq(char* a, char* b, bool negate) {
-    _star_asserts_total++;
-
     bool equal = (strcmp(a, b) == 0);
     bool ok = negate ? !equal : equal;
 
@@ -174,99 +172,79 @@ static inline int __star_find_linear(
 
 /* MACROS */
 // Equality & Inequality
-#define __STAR_EQ_IMPL(label, a, b, FAIL_CALL)                            \
+#define __STAR_EQ_IMPL(label, a, b, negate, FAIL_CALL)                    \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        if (!__assert_eq((double)(a), (double)(b), false)) {              \
+        if (!__assert_eq((double)(a), (double)(b), (negate))) {           \
             FAIL_CALL;                                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS(#label "(%s, %s) passed: %lf == %lf",              \
-                       #a, #b, (double)(a), (double)(b));                 \
+            if (!(negate))                                                \
+                _STAR_PASS(#label "(%s, %s) passed: %lf = %lf",           \
+                        #a, #b, (double)(a), (double)(b));                \
+            else                                                          \
+                _STAR_PASS(#label "(%s, %s) passed: %lf != %lf",          \
+                    #a, #b, (double)(a), (double)(b));                    \
         }                                                                 \
     } while (0)
 
 #define ASS_EQ(a, b)                                                      \
-    __STAR_EQ_IMPL(ASS_EQ, a, b,                                          \
+    __STAR_EQ_IMPL(ASS_EQ, a, b, false,                                   \
         _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",                   \
                    #a, #b, (double)(a), (double)(b)))
 
 #define ASS_EQM(a, b, m)                                                  \
-    __STAR_EQ_IMPL(ASS_EQM, a, b,                                         \
+    __STAR_EQ_IMPL(ASS_EQM, a, b, false,                                  \
         _STAR_FAIL("ASS_EQM(%s, %s) %s",                                  \
                    #a, #b, _STAR_CUSTOM(m)))
-
-#define __STAR_NEQ_IMPL(label, a, b, FAIL_CALL)                           \
-    do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (!__assert_eq((double)(a), (double)(b), true)) {               \
-            FAIL_CALL;                                                    \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS(#label "(%s, %s) passed: %lf == %lf",              \
-                       #a, #b, (double)(a), (double)(b));                 \
-        }                                                                 \
-    } while (0)
-
+                   
 #define ASS_NEQ(a, b)                                                     \
-    __STAR_NEQ_IMPL(ASS_NEQ, a, b,                                        \
-        _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf != %lf",                  \
+    __STAR_EQ_IMPL(ASS_NEQ, a, b, true,                                   \
+        _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf = %lf",                   \
                    #a, #b, (double)(a), (double)(b)))
 
 #define ASS_NEQM(a, b, m)                                                 \
-    __STAR_NEQ_IMPL(ASS_NEQM, a, b,                                       \
+    __STAR_EQ_IMPL(ASS_NEQM, a, b, true,                                  \
         _STAR_FAIL("ASS_NEQM(%s, %s) %s",                                 \
                    #a, #b, _STAR_CUSTOM(m)))
 
-#define ASS_STREQ(a, b)                                                   \
+#define __STAR_STREQ_IMPL(label, a, b, negate, FAIL_CALL)                 \
     do {                                                                  \
-        if (!__assert_streq(a, b, false)) {                               \
-            _STAR_FAIL("ASS_STREQ(%s, %s) failed: %s != %s",              \
-                       #a, #b, (a), (b));                                 \
+        _star_asserts_total++;                                            \
+        if (!__assert_streq(a, b, (negate))) {                            \
+            FAIL_CALL;                                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STREQ(%s, %s) passed: %s = %s",               \
-                       #a, #b, (a), (b));                                 \
+            if (!(negate))                                                \
+                _STAR_PASS(#label "(%s, %s) passed: %s = %s",             \
+                    #a, #b, (a), (b));                                    \
+            else                                                          \
+                _STAR_PASS(#label "(%s, %s) passed: %s != %s",            \
+                    #a, #b, (a), (b));                                    \
         }                                                                 \
     } while (0)
+
+#define ASS_STREQ(a, b)                                                   \
+    __STAR_STREQ_IMPL(ASS_STREQ, a, b, false,                             \
+        _STAR_FAIL("ASS_STREQ(%s, %s) failed: %s != %s",                  \
+                    #a, #b, (a), (b)));                                   \
 
 #define ASS_STREQM(a, b, m)                                               \
-    do {                                                                  \
-        if (!__assert_streq(a, b, false)) {                               \
-            _STAR_FAIL("ASS_STREQM(%s, %s) %s",                           \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STREQM(%s, %s) passed: %s = %s",              \
-                       #a, #b, (a), (b));                                 \
-        }                                                                 \
-    } while (0)
-
+    __STAR_STREQ_IMPL(ASS_STREQM, a, b, false,                            \
+        _STAR_FAIL("ASS_STREQM(%s, %s) %s",                               \
+                #a, #b, _STAR_CUSTOM(m)));                                \
 
 #define ASS_STRNEQ(a, b)                                                  \
-    do {                                                                  \
-        if (!__assert_streq(a, b, true)) {                                \
-            _STAR_FAIL("ASS_STRNEQ(%s, %s) failed: %s = %s",              \
-                       #a, #b, (a), (b));                                 \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STRNEQ(%s, %s) passed: %s != %s",             \
-                       #a, #b, (a), (b));                                 \
-        }                                                                 \
-    } while (0)
+    __STAR_STREQ_IMPL(ASS_STRNEQ, a, b, true,                             \
+        _STAR_FAIL("ASS_STRNEQ(%s, %s) failed: %s != %s",                 \
+                    #a, #b, (a), (b)));                                   \
 
 #define ASS_STRNEQM(a, b, m)                                              \
-    do {                                                                  \
-        if (!__assert_streq(a, b, true)) {                                \
-            _STAR_FAIL("ASS_STNRNEQM(%s, %s) %s",                         \
-                #a, #b, _STAR_CUSTOM(m));                                 \
-            if (_star_fatal) return;                                      \
-        } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STNRNEQM(%s, %s) passed: %s != %s",           \
-                       #a, #b, (a), (b));                                 \
-        }                                                                 \
-    } while (0)
+    __STAR_STREQ_IMPL(ASS_STRNEQM, a, b, true,                            \
+        _STAR_FAIL("ASS_STRNEQM(%s, %s) %s",                              \
+                #a, #b, _STAR_CUSTOM(m)));                                \
 
+// TODO: Refactor to use more space-efficient implement method
 #define __STAR_KINDAEQ_IMPL(label, a, b, dptr, FAIL_CALL)                      \
     do {                                                                       \
         _star_asserts_total++;                                                 \
@@ -850,6 +828,7 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
+        0.6.4  (2025-11-29)  Refactoring string assertion macros.
         0.6.3  (2025-11-27)  Basic refactoring assertion macros for improved readability and maintainability.
                              Done N/EQ/M and KINDA/N/EQ/M.
         0.6.2  (2025-11-27)  Fixed KINDANEQ/M logic to properly fail and append to global asserts + refactored
