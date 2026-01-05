@@ -1,4 +1,4 @@
-/* star.h - v0.3.2
+/* star_test.h - v0.3.2
    A single-header testing suite for C/C++.
 
    USAGE:
