@@ -1,4 +1,4 @@
-# star
+# star-test
 STAR (Super Technical And Reliable) testing framework written in C.
 
 > [!NOTE]
@@ -32,7 +32,7 @@ There is also support for custom messages by adding an `M` at the end of the fun
 
 ### Noncomprehensive Example
 ```c
-#include "star.h"
+#include "star_test.h"
 
 TEST(test_addition) {
     float x = 2.2 + 3.3;
@@ -77,24 +77,24 @@ TEST(test_strings) {
 </p>
 
 > [!WARNING]
-> STAR only works with GCC/Clang because it uses non-standard attributes. It will likely not work with MSVC. This may change in the future.
+> STAR-test only works with GCC/Clang because it uses non-standard attributes. It will likely not work with MSVC. This may change in the future.
 
 Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`). There are more functions, but those are shown seperately below (todo).
 
 ### Macros
 All the assertions are function-like macros, but there are a few others that, if you choose, should be defined before `#include`-ing the header:
-- `STAR_NO_ENTRY`:  
-    By default, STAR provides its own `int main(...)` entrypoint and automatically runs all tests (inspired by [sokol](https://github.com/floooh/sokol)).  
+- `STAR_NO_ENTRY`: 
+    By default, STAR-test provides its own `int main(...)` entrypoint and automatically runs all tests.
     Defining `STAR_NO_ENTRY` disables this behavior, requiring you to manually start test execution by calling `star_run(bool extra_output)`.  
-    This option should be enabled for most applications, except when testing STAR itself or when creating minimal standalone unit-test examples.
+    This option should be enabled for most applications, except when testing STAR-test itself or when creating minimal standalone unit-test examples.
 - `STAR_NO_COLOR`:
-    By default, STAR uses ASCII escape codes for coloring. Defining `STAR_NO_COLOR` disables this.
+    By default, STAR-test uses ASCII escape codes for coloring. Defining `STAR_NO_COLOR` disables this.
 - `STAR_NON_FATAL`:
     `ASS_` functions are by default fatal and will abort the function they are written in.  
     Defining `STAR_NON_FATAL` disables this, and asserts are then treated similar to `EXPECT_` macros in other libraries.  
     As [GoogleTest says](https://google.github.io/googletest/primer#assertions): these are usually preferred, so enable this whenever possible, as fatal asserts are only truly useful when continuing after failing is illogical.
 - `STAR_VERBOSE` (or `STAR_VERBOSE_ASSERTS`):
-    Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to reduce the chanced of a cluttered output. Enable this to show passed asserts.
+    Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to prevent a cluttered output. Enable this to show passed asserts.
 
 ### Dev Goals
 - [x] More informative outputs
