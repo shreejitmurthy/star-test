@@ -92,7 +92,7 @@ All the assertions are function-like macros, but there are a few others that, if
 - `STAR_NON_FATAL`:
     `ASS_` functions are by default fatal and will abort the function they are written in.  
     Defining `STAR_NON_FATAL` disables this, and asserts are then treated similar to `EXPECT_` macros in other libraries.  
-    As [GoogleTest says](https://google.github.io/googletest/primer#assertions): these are usually preferred, so enable this whenever possible, as fatal asserts are only truly useful when continuing after failing is illogical.
+    As [GoogleTest says](https://google.github.io/googletest/primer#assertions): *these are usually preferred, so enable this whenever possible, as fatal asserts are only truly useful when continuing after failing is illogical.*
 - `STAR_VERBOSE` (or `STAR_VERBOSE_ASSERTS`):
     Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to prevent a cluttered output. Enable this to show passed asserts.
 
