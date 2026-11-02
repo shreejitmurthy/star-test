@@ -8,7 +8,7 @@
         Define `STAR_NO_COLOR` to disable ASCII coloring:
         Define `STAR_NON_FATAL` so failed assertions don't abort the test entirely.
         Define `STAR_VEROBSE` or `STAR_VERBOSE_ASSERTS` for per-assert pass output.
-        
+
         See the README.md for all features.
 
    LICENSE:
@@ -114,7 +114,7 @@ static inline void __star_increment_failed() {
     _star_asserts_failed++;
     _star_current_failed = 1;
 }
-    
+
 /* ASSERTS */
 static inline bool __assert_eq(double a, double b, bool negate) {
     bool equal = __star_nearly_equal(a, b);
@@ -149,10 +149,10 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
     return ok;
 }
 
-static inline double __star_kinda_degree(const void *dptr) { 
-    double n = 6.9; 
-    if (dptr) n = *(const double*)dptr; 
-    return n; 
+static inline double __star_kinda_degree(const void *dptr) {
+    double n = 6.9;
+    if (dptr) n = *(const double*)dptr;
+    return n;
 }
 
 static inline int __star_find_linear(
@@ -197,7 +197,7 @@ static inline int __star_find_linear(
     __STAR_EQ_IMPL(ASS_EQM, a, b, false,                                  \
         _STAR_FAIL("ASS_EQM(%s, %s) %s",                                  \
                    #a, #b, _STAR_CUSTOM(m)))
-                   
+
 #define ASS_NEQ(a, b)                                                     \
     __STAR_EQ_IMPL(ASS_NEQ, a, b, true,                                   \
         _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf = %lf",                   \
@@ -624,10 +624,17 @@ static int __star_run_internal(bool verbose_start) {
 
     size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
 
-    if (verbose_start) _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
+    if (verbose_start) _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)",
         passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
     return failed_tests ? 1 : 0;
+}
+
+void star_zen() {
+    printf("Strive for elegance, for order and precision.\n");
+    printf("Strive for glory, for fame and MAANG internships.\n");
+    printf("Whatever the ambition, whatever the prize,\n");
+    printf("All must encompass two core values.\n Who's ready to get technical and reliable?\n");
 }
 
 /* Run Functionality */
@@ -649,7 +656,7 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
-        0.6.5  (2025-11-29)  Refactoring kinda, is, and comparison macros. 
+        0.6.5  (2025-11-29)  Refactoring kinda, is, and comparison macros.
         0.6.4  (2025-11-29)  Refactoring string assertion macros.
         0.6.3  (2025-11-27)  Basic refactoring assertion macros for improved readability and maintainability.
                              Done N/EQ/M and KINDA/N/EQ/M.
@@ -657,7 +664,7 @@ int main(int argc, char** argv) {
                              error message macros improved readability and consistency.
         0.6.1  (2025-11-25)  Added binary search collection asserts and custom messages.
         0.6.0  (2025-11-24)  Changes:
-                                - 0.5.1: Custom message color is now normal intensity cyan. 
+                                - 0.5.1: Custom message color is now normal intensity cyan.
                                 - 0.5.2: Consistent `bool` instead of `int` for boolean return values.
                                 - 0.6.0: Added some basic collection assertions
         0.5.0  (2025-11-24)  Changes:
@@ -675,7 +682,7 @@ int main(int argc, char** argv) {
                                 - 0.3.4: Verbose asserts to indicate which asserts passed (even if test failed).
                                 - 0.3.5: More informative output with passed tests and asserts.
                                 - 0.4.0: Added object and null checking asserts.
-        0.3.0  (2025-11-22)  Added more equality + bool asserts.                      
+        0.3.0  (2025-11-22)  Added more equality + bool asserts.
         0.2.0  (2025-11-22)  Created test running and two asserts. `main()` hijacking toggleable and
                              ASCII coloring also added.
         0.1.0  (2025-11-22)  First push.
